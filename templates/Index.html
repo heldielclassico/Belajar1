@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Segmentasi & Penghitungan Objek</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4a6fa5;
+            --secondary-color: #166088;
+            --accent-color: #4fc3a1;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--primary-color) !important;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease;
+            margin-bottom: 20px;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-header {
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 20px;
+            font-weight: 600;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            border: none;
+            padding: 12px 30px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(74, 111, 165, 0.4);
+        }
+        
+        .btn-outline-primary {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        .btn-outline-primary:hover {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .result-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .object-count {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0;
+        }
+        
+        .object-label {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .result-image {
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            height: auto;
+            margin: 10px 0;
+        }
+        
+        .parameter-slider {
+            width: 100%;
+        }
+        
+        .slider-value {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 50px;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .feature-icon {
+            font-size: 2rem;
+            color: var(--accent-color);
+            margin-bottom: 15px;
+        }
+        
+        footer {
+            margin-top: 50px;
+            padding: 20px 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-shapes me-2"></i>Morphology Counter
+            </a>
+            <div class="navbar-text">
+                <span class="badge bg-primary">Segmentasi Objek</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <!-- Header -->
+        <div class="row mb-5">
+            <div class="col-lg-8 mx-auto text-center">
+                <h1 class="display-5 fw-bold mb-3" style="color: var(--secondary-color);">
+                    Segmentasi & Penghitungan Objek
+                </h1>
+                <p class="lead text-muted">
+                    Aplikasi ini menggunakan operasi morfologi untuk mendeteksi dan menghitung objek dalam gambar.
+                    Upload gambar Anda dan lihat hasil segmentasi secara instan!
+                </p>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Panel Upload & Parameter -->
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-sliders-h me-2"></i>Parameter Pengolahan
+                    </div>
+                    <div class="card-body">
+                        <form id="uploadForm">
+                            <!-- Upload Gambar -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Upload Gambar</label>
+                                <div class="input-group">
+                                    <input type="file" class="form-control" id="imageInput" accept="image/*" required>
+                                </div>
+                                <div class="form-text">
+                                    Format yang didukung: JPG, PNG, GIF, BMP. Maksimal 5MB.
+                                </div>
+                            </div>
+
+                            <!-- Parameter Threshold -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">
+                                    Threshold: <span id="thresholdValue" class="slider-value">128</span>
+                                </label>
+                                <input type="range" class="form-range parameter-slider" id="thresholdSlider" 
+                                       min="0" max="255" value="128" step="1">
+                                <div class="form-text">
+                                    Nilai ambang batas untuk binarisasi gambar (0-255).
+                                </div>
+                            </div>
+
+                            <!-- Parameter Kernel -->
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Kernel Size X</label>
+                                    <input type="number" class="form-control" id="kernelX" value="9" min="1" max="15">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold">Kernel Size Y</label>
+                                    <input type="number" class="form-control" id="kernelY" value="5" min="1" max="15">
+                                </div>
+                                <div class="form-text mt-2">
+                                    Ukuran kernel untuk operasi opening.
+                                </div>
+                            </div>
+
+                            <!-- Parameter Iterasi -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">Iterations</label>
+                                <input type="number" class="form-control" id="iterations" value="2" min="1" max="5">
+                                <div class="form-text">
+                                    Jumlah iterasi untuk operasi opening.
+                                </div>
+                            </div>
+
+                            <!-- Tombol Aksi -->
+                            <div class="d-grid gap-2 mt-4">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-play-circle me-2"></i>Proses Gambar
+                                </button>
+                                <button type="button" class="btn btn-outline-primary" id="demoBtn">
+                                    <i class="fas fa-eye me-2"></i>Coba Demo
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Fitur Aplikasi -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <i class="fas fa-info-circle me-2"></i>Fitur Aplikasi
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-6 mb-3">
+                                <div class="feature-icon">
+                                    <i class="fas fa-crop-alt"></i>
+                                </div>
+                                <h6>Segmentasi</h6>
+                                <p class="small text-muted">Pisahkan objek dari background</p>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <div class="feature-icon">
+                                    <i class="fas fa-filter"></i>
+                                </div>
+                                <h6>Filtering</h6>
+                                <p class="small text-muted">Hilangkan noise dengan morfologi</p>
+                            </div>
+                            <div class="col-6">
+                                <div class="feature-icon">
+                                    <i class="fas fa-calculator"></i>
+                                </div>
+                                <h6>Penghitungan</h6>
+                                <p class="small text-muted">Hitung objek secara akurat</p>
+                            </div>
+                            <div class="col-6">
+                                <div class="feature-icon">
+                                    <i class="fas fa-chart-bar"></i>
+                                </div>
+                                <h6>Visualisasi</h6>
+                                <p class="small text-muted">Tampilkan hasil dengan grafik</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel Hasil -->
+            <div class="col-lg-8">
+                <!-- Loading Indicator -->
+                <div class="loading" id="loadingIndicator">
+                    <div class="spinner"></div>
+                    <h4 class="mt-3" style="color: var(--primary-color);">Memproses Gambar...</h4>
+                    <p class="text-muted">Sedang melakukan segmentasi dan penghitungan objek</p>
+                </div>
+
+                <!-- Hasil -->
+                <div id="resultsSection" style="display: none;">
+                    <!-- Statistik -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="stats-card">
+                                <h5 class="object-count" id="countBefore">0</h5>
+                                <p class="object-label">Objek Sebelum Opening</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="stats-card">
+                                <h5 class="object-count" id="countAfter">0</h5>
+                                <p class="object-label">Objek Setelah Opening</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gambar Hasil -->
+                    <div class="result-card">
+                        <h5 class="fw-bold mb-4" style="color: var(--secondary-color);">
+                            <i class="fas fa-image me-2"></i>Hasil Segmentasi
+                        </h5>
+                        <div class="text-center">
+                            <img id="resultImage" class="result-image" src="" alt="Hasil Segmentasi">
+                        </div>
+                        <div class="mt-4">
+                            <h6>Parameter yang digunakan:</h6>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <small class="text-muted">Threshold</small>
+                                    <div id="paramThreshold" class="fw-bold">128</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted">Kernel Size</small>
+                                    <div id="paramKernel" class="fw-bold">9x5</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted">Iterations</small>
+                                    <div id="paramIterations" class="fw-bold">2</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted">Pengurangan</small>
+                                    <div id="paramReduction" class="fw-bold text-danger">0%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Informasi -->
+                    <div class="result-card mt-4">
+                        <h5 class="fw-bold mb-3" style="color: var(--secondary-color);">
+                            <i class="fas fa-lightbulb me-2"></i>Penjelasan Hasil
+                        </h5>
+                        <div id="explanationText">
+                            <p><strong>Segmentasi Objek</strong> adalah proses memisahkan objek dari latar belakang dalam sebuah gambar.</p>
+                            <p><strong>Operasi Opening</strong> (erosi diikuti dilasi) membantu:</p>
+                            <ul>
+                                <li>Memisahkan objek yang saling menempel</li>
+                                <li>Menghilangkan noise kecil</li>
+                                <li>Mempertahankan bentuk objek utama</li>
+                            </ul>
+                            <p class="mb-0">Hasil di atas menunjukkan perbandingan jumlah objek sebelum dan setelah operasi opening.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Default State -->
+                <div id="defaultState" class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-cloud-upload-alt" style="font-size: 5rem; color: #ccc;"></i>
+                    </div>
+                    <h4 class="text-muted mb-3">Belum ada gambar yang diproses</h4>
+                    <p class="text-muted">Upload gambar Anda atau coba demo untuk melihat hasil segmentasi.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container text-center">
+            <p class="text-muted mb-0">
+                &copy; 2023 Morphology Counter - Aplikasi Segmentasi Objek dengan Operasi Morfologi
+            </p>
+            <small class="text-muted">Menggunakan Python, Flask, Pillow, NumPy, dan SciPy</small>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // Update slider value display
+            $('#thresholdSlider').on('input', function() {
+                $('#thresholdValue').text($(this).val());
+            });
+
+            // Form submission
+            $('#uploadForm').submit(function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData();
+                const imageFile = $('#imageInput')[0].files[0];
+                
+                if (!imageFile) {
+                    alert('Silakan pilih gambar terlebih dahulu!');
+                    return;
+                }
+                
+                formData.append('image', imageFile);
+                formData.append('threshold', $('#thresholdSlider').val());
+                formData.append('kernel_x', $('#kernelX').val());
+                formData.append('kernel_y', $('#kernelY').val());
+                formData.append('iterations', $('#iterations').val());
+                
+                // Show loading, hide other sections
+                $('#loadingIndicator').show();
+                $('#defaultState').hide();
+                $('#resultsSection').hide();
+                
+                // Send request to server
+                $.ajax({
+                    url: '/process',
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        if (response.success) {
+                            displayResults(response);
+                        } else {
+                            alert('Error: ' + (response.error || 'Terjadi kesalahan'));
+                        }
+                    },
+                    error: function(xhr) {
+                        alert('Error: ' + (xhr.responseJSON?.error || 'Terjadi kesalahan pada server'));
+                    },
+                    complete: function() {
+                        $('#loadingIndicator').hide();
+                    }
+                });
+            });
+
+            // Demo button
+            $('#demoBtn').click(function() {
+                $('#loadingIndicator').show();
+                $('#defaultState').hide();
+                $('#resultsSection').hide();
+                
+                $.ajax({
+                    url: '/demo',
+                    type: 'GET',
+                    success: function(response) {
+                        if (response.success) {
+                            displayResults(response);
+                        } else {
+                            alert('Error: ' + (response.error || 'Terjadi kesalahan'));
+                        }
+                    },
+                    error: function(xhr) {
+                        alert('Error: ' + (xhr.responseJSON?.error || 'Terjadi kesalahan pada server'));
+                    },
+                    complete: function() {
+                        $('#loadingIndicator').hide();
+                    }
+                });
+            });
+
+            // Function to display results
+            function displayResults(data) {
+                // Update statistics
+                $('#countBefore').text(data.nbr_objects_before);
+                $('#countAfter').text(data.nbr_objects_after);
+                
+                // Update parameters
+                $('#paramThreshold').text(data.stats.threshold);
+                $('#paramKernel').text(data.stats.kernel_size[0] + 'x' + data.stats.kernel_size[1]);
+                $('#paramIterations').text(data.stats.iterations);
+                
+                // Calculate reduction percentage
+                const reduction = Math.round(
+                    ((data.nbr_objects_before - data.nbr_objects_after) / data.nbr_objects_before) * 100
+                );
+                $('#paramReduction').text(reduction + '%');
+                
+                // Update image
+                $('#resultImage').attr('src', 'data:image/png;base64,' + data.image_base64);
+                
+                // Update explanation
+                const explanation = `
+                    <p><strong>Segmentasi Objek</strong> berhasil mendeteksi ${data.nbr_objects_before} objek pada gambar asli.</p>
+                    <p>Setelah operasi <strong>Opening</strong> dengan kernel ${data.stats.kernel_size[0]}x${data.stats.kernel_size[1]} dan ${data.stats.iterations} iterasi:</p>
+                    <ul>
+                        <li>Objek yang terdeteksi: <strong>${data.nbr_objects_after}</strong></li>
+                        <li>Pengurangan noise: <strong>${reduction}%</strong></li>
+                        <li>${data.nbr_objects_before - data.nbr_objects_after} objek kecil/noise berhasil dihilangkan</li>
+                    </ul>
+                    <p class="mb-0">Operasi opening efektif untuk memisahkan objek yang saling menempel dan menghilangkan artefak kecil.</p>
+                `;
+                $('#explanationText').html(explanation);
+                
+                // Show results section
+                $('#resultsSection').show();
+            }
+        });
+    </script>
+</body>
+</html>
